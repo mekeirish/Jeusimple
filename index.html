@@ -1,3 +1,10 @@
+Voici le code HTML complet avec les améliorations demandées pour la "map" (la grille) :
+
+1.  **Affichage des coordonnées** : Un élément `<p>` a été ajouté pour montrer la position actuelle du point (colonne, ligne) au-dessus de la grille.
+2.  **Navigation au clavier** : Vous pouvez maintenant déplacer le point avec les touches fléchées du clavier.
+3.  **Lignes de grille plus visibles** : La couleur de la variable CSS `--border-color` a été légèrement assombrie pour rendre les lignes de la grille plus distinctes.
+4.  **Style pour les coordonnées** : Des styles ont été ajoutés pour l'affichage des coordonnées, incluant une couleur de fond et de texte dédiées.
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -14,10 +21,12 @@
             --button-bg: #3498db; /* Arrière-plan des boutons */
             --button-text: #ffffff; /* Texte des boutons */
             --button-active-bg: #2980b9; /* Arrière-plan actif des boutons */
-            --border-color: #bdc3c7; /* Couleur des bordures et lignes de grille */
+            --border-color: #a0a0a0; /* MODIF: Couleur de bordure légèrement plus foncée pour plus de visibilité */
             --text-color: #333; /* Couleur du texte principal */
             --body-bg: #f0f2f5; /* Arrière-plan du corps */
             --heading-color: #4b6cb7; /* Couleur des titres */
+            --coordinates-bg: #ecf0f1; /* NOUVEAU: Fond pour l'affichage des coordonnées */
+            --coordinates-text: #2c3e50; /* NOUVEAU: Couleur du texte pour l'affichage des coordonnées */
         }
 
         /* Réinitialisation de base pour mobile-first */
@@ -42,11 +51,24 @@
         }
 
         h1 {
-            margin-bottom: 30px;
+            margin-bottom: 20px; /* MODIF: Réduction de la marge pour faire de la place aux coordonnées */
             font-size: 1.8em; /* Taille de police relative pour mobile-first */
             text-align: center;
             color: var(--heading-color);
             padding: 0 10px; /* Petit padding pour éviter que le texte ne touche les bords */
+        }
+
+        /* NOUVEAU: Styles pour l'affichage des coordonnées */
+        #coordinates {
+            margin-bottom: 30px; /* Espace entre les coordonnées et le conteneur du jeu */
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--coordinates-text);
+            background-color: var(--coordinates-bg);
+            padding: 8px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            text-align: center;
         }
 
         .game-container {
@@ -66,7 +88,7 @@
             width: 90%; /* Occupe 90% de la largeur du game-container */
             max-width: 300px; /* Largeur max de la grille pour rester esthétique */
             aspect-ratio: 1; /* Force la grille à rester carrée */
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border-color); /* Utilise la couleur de bordure mise à jour */
             background-color: #ffffff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Légère ombre pour la profondeur */
             position: relative; /* Nécessaire pour les lignes de grille absolues */
@@ -155,6 +177,10 @@
             h1 {
                 font-size: 1.6em;
             }
+            #coordinates { /* MODIF: Ajustement pour les petits écrans */
+                font-size: 1em;
+                padding: 6px 12px;
+            }
             .controls button {
                 width: 55px;
                 height: 55px;
@@ -169,6 +195,10 @@
         @media (max-width: 320px) {
             h1 {
                 font-size: 1.4em;
+            }
+            #coordinates { /* MODIF: Ajustement pour les très petits écrans */
+                font-size: 0.9em;
+                padding: 5px 10px;
             }
             .controls button {
                 width: 50px;
@@ -185,6 +215,7 @@
 </head>
 <body>
     <h1>Déplace le point !</h1>
+    <p id="coordinates">Position: (X, Y)</p> <!-- NOUVEAU: Affichage des coordonnées -->
 
     <div class="game-container">
         <div class="grid-container" id="gridContainer">
@@ -211,6 +242,7 @@
         const downBtn = document.getElementById('down');
         const leftBtn = document.getElementById('left');
         const rightBtn = document.getElementById('right');
+        const coordinatesDisplay = document.getElementById('coordinates'); // NOUVEAU: Récupère l'élément d'affichage des coordonnées
 
         /**
          * Met à jour la position du point dans la grille et l'état des boutons.
@@ -219,6 +251,9 @@
             // CSS grid-row-start et grid-column-start sont basés sur un index de 1
             point.style.gridRowStart = currentRow + 1;
             point.style.gridColumnStart = currentCol + 1;
+
+            // NOUVEAU: Met à jour l'affichage des coordonnées (indexé à 1 pour l'utilisateur)
+            coordinatesDisplay.textContent = `Position: (Col ${currentCol + 1}, Ligne ${currentRow + 1})`;
 
             // Désactive/Active les boutons en fonction de la position du point
             upBtn.disabled = currentRow === 0;
@@ -253,6 +288,40 @@
             if (currentCol < gridSize - 1) {
                 currentCol++;
                 updatePointPosition();
+            }
+        });
+
+        // NOUVEAU: Navigation au clavier avec les touches fléchées
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    if (currentRow > 0) {
+                        currentRow--;
+                        updatePointPosition();
+                        event.preventDefault(); // Empêche le défilement de la page
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (currentRow < gridSize - 1) {
+                        currentRow++;
+                        updatePointPosition();
+                        event.preventDefault(); // Empêche le défilement de la page
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (currentCol > 0) {
+                        currentCol--;
+                        updatePointPosition();
+                        event.preventDefault(); // Empêche le défilement de la page
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (currentCol < gridSize - 1) {
+                        currentCol++;
+                        updatePointPosition();
+                        event.preventDefault(); // Empêche le défilement de la page
+                    }
+                    break;
             }
         });
 
