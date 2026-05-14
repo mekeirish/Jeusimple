@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guidage de Point</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4b6cb7">
+    <style>
+        /* Variables CSS pour faciliter la personnalisation */
+        :root {
+            --grid-size: 5; /* Définit une grille N x N (ex: 5x5) */
+            --point-color: #e74c3c; /* Couleur du point */
+            --button-bg: #3498db; /* Arrière-plan des boutons */
+            --button-text: #ffffff; /* Texte des boutons */
+            --button-active-bg: #2980b9; /* Arrière-plan actif des boutons */
+            --border-color: #bdc3c7; /* Couleur des bordures et lignes de grille */
+            --text-color: #333; /* Couleur du texte principal */
+            --body-bg: #f0f2f5; /* Arrière-plan du corps */
+            --heading-color: #4b6cb7; /* Couleur des titres */
+        }
+
+        /* Réinitialisation de base pour mobile-first */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 1.8em; /* Taille de police relative pour mobile-first */
+            text-align: center;
+            color: var(--heading-color);
+            padding: 0 10px; /* Petit padding pour éviter que le texte ne touche les bords */
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px; /* Espace entre la grille et les contrôles */
+            max-width: 400px; /* Limite la largeur max sur les grands écrans */
+            width: 100%; /* Occupe toute la largeur disponible sur les petits écrans */
+        }
+
+        .grid-container {
+            display: grid;
+            /* Crée N colonnes et N lignes de taille égale */
+            grid-template-columns: repeat(var(--grid-size), 1fr);
+            grid-template-rows: repeat(var(--grid-size), 1fr);
+            width: 90%; /* Occupe 90% de la largeur du game-container */
+            max-width: 300px; /* Largeur max de la grille pour rester esthétique */
+            aspect-ratio: 1; /* Force la grille à rester carrée */
+            border: 2px solid var(--border-color);
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Légère ombre pour la profondeur */
+            position: relative; /* Nécessaire pour les lignes de grille absolues */
+            overflow: hidden; /* Assure que les lignes ne débordent pas */
+        }
+
+        /* Pseudo-élément pour dessiner les lignes de la grille */
+        .grid-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(to right, var(--border-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+            /* Dessine des lignes tous les X pourcentages pour chaque cellule */
+            background-size: calc(100% / var(--grid-size)) calc(100% / var(--grid-size));
+            pointer-events: none; /* Permet d'interagir avec les éléments sous-jacents */
+            z-index: 1; /* S'assure que les lignes sont en dessous du point */
+        }
+
+        .point {
+            width: 70%; /* Le point occupe 70% de la largeur de sa cellule */
+            height: 70%; /* Le point occupe 70% de la hauteur de sa cellule */
+            background-color: var(--point-color);
+            border-radius: 50%; /* Rend le point circulaire */
+            justify-self: center; /* Centre le point horizontalement dans sa cellule */
+            align-self: center;   /* Centre le point verticalement dans sa cellule */
+            /* Ajoute une transition pour un mouvement fluide */
+            transition: grid-row-start 0.2s ease-in-out, grid-column-start 0.2s ease-in-out;
+            z-index: 2; /* S'assure que le point est au-dessus des lignes de grille */
+        }
+
+        .controls {
+            display: grid;
+            /* Crée une disposition en croix pour les boutons */
+            grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px; /* Espacement entre les boutons */
+            width: 200px; /* Largeur fixe pour le conteneur de contrôles */
+            height: 200px; /* Hauteur fixe pour le conteneur de contrôles */
+            align-items: center;
+            justify-items: center;
+        }
+
+        .controls button {
+            width: 60px;
+            height: 60px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 8px; /* Bords légèrement arrondis */
+            font-size: 1.2em;
+            cursor: pointer;
+            outline: none; /* Supprime l'outline au focus */
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Légère ombre pour les boutons */
+        }
+
+        .controls button:active {
+            background-color: var(--button-active-bg);
+            transform: translateY(1px); /* Effet d'enfoncement au clic */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Attribution des zones de grille aux boutons */
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #right { grid-area: right; }
+        #down { grid-area: down; }
+
+        /* Media Queries pour ajustements sur très petits écrans */
+        @media (max-width: 380px) {
+            h1 {
+                font-size: 1.6em;
+            }
+            .controls button {
+                width: 55px;
+                height: 55px;
+                font-size: 1.1em;
+            }
+            .controls {
+                width: 180px;
+                height: 180px;
+                gap: 8px;
+            }
+        }
+        @media (max-width: 320px) {
+            h1 {
+                font-size: 1.4em;
+            }
+            .controls button {
+                width: 50px;
+                height: 50px;
+                font-size: 1em;
+            }
+            .controls {
+                width: 170px;
+                height: 170px;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Déplace le point !</h1>
+
+    <div class="game-container">
+        <div class="grid-container" id="gridContainer">
+            <div class="point" id="point"></div>
+        </div>
+
+        <div class="controls">
+            <button id="up">▲</button>
+            <button id="left">◀</button>
+            <button id="right">▶</button>
+            <button id="down">▼</button>
+        </div>
+    </div>
+
+    <script>
+        // Récupère la taille de la grille depuis la variable CSS (transformée en nombre)
+        const gridSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--grid-size'));
+        let currentRow = Math.floor(gridSize / 2); // Position initiale au centre (ligne, 0-indexé)
+        let currentCol = Math.floor(gridSize / 2); // Position initiale au centre (colonne, 0-indexé)
+
+        // Récupération des éléments du DOM
+        const point = document.getElementById('point');
+        const upBtn = document.getElementById('up');
+        const downBtn = document.getElementById('down');
+        const leftBtn = document.getElementById('left');
+        const rightBtn = document.getElementById('right');
+
+        /**
+         * Met à jour la position du point dans la grille et l'état des boutons.
+         */
+        function updatePointPosition() {
+            // CSS grid-row-start et grid-column-start sont basés sur un index de 1
+            point.style.gridRowStart = currentRow + 1;
+            point.style.gridColumnStart = currentCol + 1;
+
+            // Désactive/Active les boutons en fonction de la position du point
+            upBtn.disabled = currentRow === 0;
+            downBtn.disabled = currentRow === gridSize - 1;
+            leftBtn.disabled = currentCol === 0;
+            rightBtn.disabled = currentCol === gridSize - 1;
+        }
+
+        // Ajout des écouteurs d'événements pour les boutons de direction
+        upBtn.addEventListener('click', () => {
+            if (currentRow > 0) {
+                currentRow--;
+                updatePointPosition();
+            }
+        });
+
+        downBtn.addEventListener('click', () => {
+            if (currentRow < gridSize - 1) {
+                currentRow++;
+                updatePointPosition();
+            }
+        });
+
+        leftBtn.addEventListener('click', () => {
+            if (currentCol > 0) {
+                currentCol--;
+                updatePointPosition();
+            }
+        });
+
+        rightBtn.addEventListener('click', () => {
+            if (currentCol < gridSize - 1) {
+                currentCol++;
+                updatePointPosition();
+            }
+        });
+
+        // Initialise la position du point au chargement de la page
+        updatePointPosition();
+    </script>
+
+    <!-- Script pour l'enregistrement du Service Worker, comme demandé -->
+    <script>
+    if('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW OK')).catch(err => console.log('SW Error', err));
+      });
+    }
+    </script>
+</body>
+</html>
