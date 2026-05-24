@@ -2,508 +2,748 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grr de Point</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4b6cb7">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hubcode - Repository Manager</title>
     <style>
-        :root {
-            --grid-size: 5;
-            --button-bg: #3498db;
-            --button-text: #ffffff;
-            --button-active-bg: #2980b9;
-            --border-color: #a0a0a0;
-            --text-color: #333;
-            --body-bg: #ff0000; /* Fond modifié en rouge par défaut */
-            --heading-color: #4b6cb7;
-            --coordinates-bg: #ecf0f1;
-            --coordinates-text: #2c3e50;
-            --wall-color: #7f8c8d;
-            --toolbar-bg: #f8f8f8;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --bg: #1e1e22; 
+            --card-bg: #1e1e22; 
+            --shadow-dark: #111113; 
+            --shadow-light: #2b2b31; 
+            --accent: #ffca28; 
+            --text: #c9d1d9; 
+            --danger: #f85149; 
+            --success: #7ee787; 
+            --blue: #58a6ff;
+            --orange: #ffa726;
         }
-
-        *, *::before, *::after {
-            box-sizing: border-box;
+        
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, system-ui, sans-serif; 
+            padding: 15px; 
             margin: 0;
-            padding: 0;
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: var(--body-bg); /* Utilise la variable CSS */
-            color: var(--text-color);
-            padding: 20px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            transition: background-color 0.3s ease; /* Transition douce pour le changement de couleur */
+        
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); 
+            border: none; 
+            margin-bottom: 20px; 
         }
-
-        h1 {
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            text-align: center;
-            color: var(--heading-color);
-            padding: 0 10px;
-        }
-
-        #coordinates {
-            margin-bottom: 30px;
-            font-size: 1.1em;
-            font-weight: bold;
-            color: var(--coordinates-text);
-            background-color: var(--coordinates-bg);
-            padding: 8px 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(var(--grid-size), 1fr);
-            grid-template-rows: repeat(var(--grid-size), 1fr);
-            width: 90%;
-            max-width: 300px;
-            aspect-ratio: 1;
-            border: 2px solid var(--border-color);
-            background-color: #ffffff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .grid-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(to right, var(--border-color) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
-            background-size: calc(100% / var(--grid-size)) calc(100% / var(--grid-size));
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .point {
-            width: 70%;
-            height: 70%;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e74c3c'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            justify-self: center;
-            align-self: center;
-            transition: grid-row-start 0.2s ease-in-out, grid-column-start 0.2s ease-in-out;
-            z-index: 2;
-        }
-
-        .wall-on-grid {
-            width: 100%;
-            height: 100%;
-            background-color: var(--wall-color);
-            position: relative;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5em;
-            color: white;
-            cursor: grab;
-            transition: grid-row-start 0.2s ease-in-out, grid-column-start 0.2s ease-in-out;
-        }
-
-        .wall-on-grid.is-dragging {
-            opacity: 0.6;
-        }
-
-        .controls {
-            display: grid;
-            grid-template-areas:
-                ". up ."
-                "left center right"
-                ". down .";
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 10px;
-            width: 200px;
-            height: 200px;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .controls button {
-            width: 60px;
-            height: 60px;
-            background-color: var(--button-bg);
-            color: var(--button-text);
-            border: none;
-            border-radius: 8px;
-            font-size: 1.2em;
-            cursor: pointer;
+        
+        h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-top: 0; }
+        
+        input { 
+            width: 100%; 
+            margin: 8px 0; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: none; 
+            background: var(--bg); 
+            color: white; 
+            box-sizing: border-box; 
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light); 
             outline: none;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 13px;
         }
 
-        .controls button:active {
-            background-color: var(--button-active-bg);
-            transform: translateY(1px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        .search-box {
+            margin: 12px 0 4px 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .controls button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        #up { grid-area: up; }
-        #left { grid-area: left; }
-        #right { grid-area: right; }
-        #down { grid-area: down; }
-
-        .toolbar {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: var(--toolbar-bg);
-            border-top: 1px solid #ddd;
-            width: 100%;
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: 20px; 
             max-width: 400px;
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-radius: 8px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999;
+            pointer-events: none; 
         }
 
-        .toolbar-item {
-            width: 60px;
-            height: 60px;
-            background-color: var(--wall-color); /* Couleur de fond pour les items de la toolbar */
-            border-radius: 5px;
+        @media (min-width: 440px) {
+            .toast-container {
+                left: auto;
+                width: 360px;
+            }
+        }
+
+        .internal-toast {
+            pointer-events: auto; 
+            background: linear-gradient(135deg, #16161a, #111113);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 0.5px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 2px 2px 4px var(--shadow-dark);
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 2em;
-            cursor: pointer; /* Curseur par défaut pour les items interactifs */
-            transition: transform 0.1s ease, background-color 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            color: white;
-            user-select: none; /* Empêche la sélection du texte/emoji */
+            justify-content: space-between;
+            animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .toolbar-item.wall-tool {
-            cursor: grab; /* Curseur spécifique pour l'outil mur */
+        .internal-toast.success-toast { border-left-color: var(--success); }
+        .internal-toast.danger-toast { border-left-color: var(--danger); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        button.btn { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 8px; 
+            transition: all 0.1s ease; 
+            background: linear-gradient(135deg, #2b2b31, #1b1b1f); 
+            box-shadow: 4px 4px 8px var(--shadow-dark), 
+                        -4px -4px 8px var(--shadow-light),
+                        inset 1px 1px 1px rgba(255, 255, 255, 0.1); 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+        
+        button.btn:active { 
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), 
+                        inset -3px -3px 6px var(--shadow-light); 
+            transform: translateY(1px); 
+        }
+        
+        .yellow-btn { color: var(--accent); border-bottom: 2px solid rgba(255, 202, 40, 0.2) !important; }
+        .red-btn { color: var(--danger); border-bottom: 2px solid rgba(248, 81, 73, 0.2) !important; }
+        
+        .repo-list {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .repo-item {
+            background: var(--card-bg);
+            padding: 14px;
+            border-radius: 14px;
+            box-shadow: 4px 4px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .repo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+        
+        .repo-actions-row {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            padding-bottom: 4px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            min-width: 0; 
+            padding: 11px 2px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            background: linear-gradient(135deg, #26262b, #16161a);
+            color: var(--text);
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 2px 2px 4px var(--shadow-dark), 
+                        -1px -1px 2px var(--shadow-light),
+                        inset 1px 1px 0px rgba(255, 255, 255, 0.05);
+            text-align: center;
+            transition: all 0.05s ease;
+        }
+        
+        .action-btn:active {
+            box-shadow: inset 2px 2px 4px var(--shadow-dark);
+            transform: translateY(1px);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+            filter: grayscale(0.1);
         }
 
-        .toolbar-item:hover {
-            transform: translateY(-2px);
+        .btn-html { color: var(--blue); border-bottom: 2px solid rgba(88, 166, 255, 0.3); }
+        .btn-json { color: var(--accent); border-bottom: 2px solid rgba(255, 202, 40, 0.3); }
+        .btn-sw { color: var(--success); border-bottom: 2px solid rgba(126, 231, 135, 0.3); }
+        .btn-view { color: #fff; background: linear-gradient(135deg, #4a4a54, #2a2a30); border-bottom: 2px solid rgba(255, 255, 255, 0.2); }
+        .btn-back { color: var(--orange); border-bottom: 2px solid rgba(255, 167, 38, 0.3); }
+        .btn-sup { color: var(--danger); border-bottom: 2px solid rgba(248, 81, 73, 0.3); }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .dot-idle { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot-active { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 0.8s infinite alternate; }
+        
+        @keyframes blink { from { opacity: 0.4; } to { opacity: 1; } }
+        
+        .confirm-panel {
+            background: #1a1a1d;
+            border: 1px solid var(--danger);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 7px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 11px;
+            box-shadow: 2px 2px 4px var(--shadow-dark), inset 1px 1px 0px rgba(255, 255, 255, 0.1);
+            transition: all 0.05s ease;
         }
 
-        @media (max-width: 380px) {
-            h1 {
-                font-size: 1.6em;
-            }
-            #coordinates {
-                font-size: 1em;
-                padding: 6px 12px;
-            }
-            .controls button {
-                width: 55px;
-                height: 55px;
-                font-size: 1.1em;
-            }
-            .controls {
-                width: 180px;
-                height: 180px;
-                gap: 8px;
-            }
-            .toolbar-item {
-                width: 55px;
-                height: 55px;
-                font-size: 1.8em;
-            }
+        .confirm-btn:active {
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transform: translateY(1px);
         }
-        @media (max-width: 320px) {
-            h1 {
-                font-size: 1.4em;
-            }
-            #coordinates {
-                font-size: 0.9em;
-                padding: 5px 10px;
-            }
-            .controls button {
-                width: 50px;
-                height: 50px;
-                font-size: 1em;
-            }
-            .controls {
-                width: 170px;
-                height: 170px;
-                gap: 5px;
-            }
-            .toolbar-item {
-                width: 50px;
-                height: 50px;
-                font-size: 1.6em;
-            }
+
+        /* Tracker Terminal */
+        .tracker-terminal {
+            background: #0a0c10;
+            border-radius: 12px;
+            margin-top: 12px;
+            padding: 10px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 10px;
+            border: 1px solid rgba(255, 202, 40, 0.25);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+            color: #c0c0d0;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #2a2a32;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 9px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .log-line {
+            padding: 3px 4px;
+            border-radius: 5px;
+            background: #111217;
+            word-break: break-word;
+            font-size: 10px;
+            font-family: monospace;
+            border-left: 2px solid transparent;
+        }
+
+        .log-success { color: var(--success); border-left-color: var(--success); }
+        .log-error { color: var(--danger); border-left-color: var(--danger); }
+        .log-step { color: var(--blue); border-left-color: var(--blue); }
+        .log-warning { color: var(--orange); border-left-color: var(--orange); }
+
+        .spinner-small {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border: 1.5px solid rgba(255,202,40,0.3);
+            border-top: 1.5px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .signature {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-top: auto;
+            padding-top: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4b6cb7">
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4b6cb7">
-<link rel="apple-touch-icon" href="icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4b6cb7">
 <link rel="apple-touch-icon" href="icon.png"></head>
 <body>
-    <h1>badboy</h1>
-    <p id="coordinates">Position: (X, Y)</p>
+    <div id="toastContainer" class="toast-container"></div>
 
-    <div class="game-container">
-        <div class="grid-container" id="gridContainer">
-            <div class="point" id="point"></div>
-        </div>
-
-        <div class="controls">
-            <button id="up">▲</button>
-            <button id="left">◀</button>
-            <button id="right">▶</button>
-            <button id="down">▼</button>
-        </div>
+    <div class="card">
+        <h2>Hubcode</h2>
+        <input type="password" id="githubToken" placeholder="Token GitHub (accès repo + delete_repo)">
+        <button class="btn yellow-btn" onclick="playHum60Hz(); fetchRepositories()">🔄 CHARGER LES DÉPÔTS</button>
     </div>
 
-    <div class="toolbar">
-        <div class="toolbar-item wall-tool" draggable="true" id="wallToolbarItem">
-            🧱
+    <div class="card" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between;">
+            <span style="font-size:0.75rem; text-transform:uppercase; color:#888;">Projets</span>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                <span class="status-dot dot-idle" id="globalStatus"></span> <span id="statusText">PRÊT</span>
+            </div>
         </div>
-        <div class="toolbar-item" id="changeBgButton">
-            🎨
-        </div>
+        <input type="text" id="repoSearch" class="search-box" placeholder="🔍 Rechercher..." oninput="filterRepositories()">
+        <div class="repo-list" id="repoListContainer"></div>
     </div>
+    <div class="signature">Made by Brahim Laiche 2026 Paris</div>
 
-    <script>
-        const gridSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--grid-size'));
-        let currentRow = Math.floor(gridSize / 2);
-        let currentCol = Math.floor(gridSize / 2);
+<script>
+    let allRepositories = [];
+    let audioCtx = null;
 
-        const point = document.getElementById('point');
-        const upBtn = document.getElementById('up');
-        const downBtn = document.getElementById('down');
-        const leftBtn = document.getElementById('left');
-        const rightBtn = document.getElementById('right');
-        const coordinatesDisplay = document.getElementById('coordinates');
-        const gridContainer = document.getElementById('gridContainer');
-        const wallToolbarItem = document.getElementById('wallToolbarItem');
-        const changeBgButton = document.getElementById('changeBgButton'); // Référence au nouveau bouton
-
-        const walls = new Set();
-        let draggingWallEl = null;
-        let draggingWallCoords = null;
-
-        // Liste de couleurs de fond à alterner (Commence par le rouge par défaut)
-        const backgroundColors = [
-            '#ff0000', // Rouge par défaut
-            '#f0f2f5', // Default light grey
-            '#e0f7fa', // Light blue
-            '#fffde7', // Light yellow
-            '#fbe9e7', // Light peach
-            '#e8f5e9'  // Light green
-        ];
-        let currentBgColorIndex = 0;
-
-        function updatePointPosition() {
-            point.style.gridRowStart = currentRow + 1;
-            point.style.gridColumnStart = currentCol + 1;
-
-            coordinatesDisplay.textContent = `Position: (Col ${currentCol + 1}, Ligne ${currentRow + 1})`;
-
-            upBtn.disabled = currentRow === 0 || walls.has(`${currentRow - 1},${currentCol}`);
-            downBtn.disabled = currentRow === gridSize - 1 || walls.has(`${currentRow + 1},${currentCol}`);
-            leftBtn.disabled = currentCol === 0 || walls.has(`${currentRow},${currentCol - 1}`);
-            rightBtn.disabled = currentCol === gridSize - 1 || walls.has(`${currentRow},${currentCol + 1}`);
-        }
-
-        function getGridCellFromEvent(event) {
-            const gridRect = gridContainer.getBoundingClientRect();
-            const x = event.clientX - gridRect.left;
-            const y = event.clientY - gridRect.top;
-
-            const cellSize = gridRect.width / gridSize;
-
-            let col = Math.floor(x / cellSize);
-            let row = Math.floor(y / cellSize);
-
-            if (x < 0 || x > gridRect.width || y < 0 || y > gridRect.height) {
-                return [-1, -1];
-            }
-            
-            col = Math.max(0, Math.min(col, gridSize - 1));
-            row = Math.max(0, Math.min(row, gridSize - 1));
-
-            return [row, col];
-        }
-
-        function createWallElement(row, col) {
-            const wallDiv = document.createElement('div');
-            wallDiv.classList.add('wall-on-grid');
-            wallDiv.draggable = true;
-            wallDiv.dataset.row = row;
-            wallDiv.dataset.col = col;
-            wallDiv.style.gridRowStart = row + 1;
-            wallDiv.style.gridColumnStart = col + 1;
-
-            wallDiv.addEventListener('dragstart', (event) => {
-                draggingWallEl = event.target;
-                draggingWallCoords = { row: parseInt(event.target.dataset.row), col: parseInt(event.target.dataset.col) };
-                event.target.classList.add('is-dragging');
-                event.dataTransfer.setData('text/plain', 'wall_from_grid');
-                const img = new Image();
-                img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%237f8c8d"%3E%3Cpath d="M2 20h20V4H2v16zM4 6h16v12H4V6z"/%3E%3C/svg%3E';
-                event.dataTransfer.setDragImage(img, 25, 25);
-            });
-
-            wallDiv.addEventListener('dragend', () => {
-                if (draggingWallEl) {
-                    draggingWallEl.classList.remove('is-dragging');
-                }
-                draggingWallEl = null;
-                draggingWallCoords = null;
-            });
-
-            return wallDiv;
-        }
-
-        wallToolbarItem.addEventListener('dragstart', (event) => {
-            event.dataTransfer.setData('text/plain', 'wall_from_toolbar');
-            const img = new Image();
-            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%237f8c8d"%3E%3Cpath d="M2 20h20V4H2v16zM4 6h16v12H4V6z"/%3E%3C/svg%3E';
-            event.dataTransfer.setDragImage(img, 25, 25);
-        });
-
-        gridContainer.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-        });
-
-        gridContainer.addEventListener('drop', (event) => {
-            event.preventDefault();
-
-            const [dropRow, dropCol] = getGridCellFromEvent(event);
-            const data = event.dataTransfer.getData('text/plain');
-
-            if (data === 'wall_from_grid' && draggingWallEl && draggingWallCoords) {
-                const { row: oldRow, col: oldCol } = draggingWallCoords;
-
-                // Si la cible de la chute est en dehors de la grille, supprimer le mur
-                if (dropRow === -1 || dropCol === -1) {
-                    walls.delete(`${oldRow},${oldCol}`);
-                    draggingWallEl.remove();
-                } else {
-                    // Si la nouvelle position est libre ou est la position d'origine du mur
-                    if (!walls.has(`${dropRow},${dropCol}`) || (dropRow === oldRow && dropCol === oldCol)) {
-                        walls.delete(`${oldRow},${oldCol}`);
-                        walls.add(`${dropRow},${dropCol}`);
-
-                        draggingWallEl.style.gridRowStart = dropRow + 1;
-                        draggingWallEl.style.gridColumnStart = dropCol + 1;
-                        draggingWallEl.dataset.row = dropRow;
-                        draggingWallEl.dataset.col = dropCol;
-                    }
-                }
-            } else if (data === 'wall_from_toolbar') {
-                if (dropRow !== -1 && dropCol !== -1 && !walls.has(`${dropRow},${dropCol}`)) {
-                    const newWall = createWallElement(dropRow, dropCol);
-                    gridContainer.appendChild(newWall);
-                    walls.add(`${dropRow},${dropCol}`);
-                }
-            }
-            
-            updatePointPosition();
-
-            if (draggingWallEl) {
-                draggingWallEl.classList.remove('is-dragging');
-            }
-            draggingWallEl = null;
-            draggingWallCoords = null;
-        });
-
-        function movePoint(deltaRow, deltaCol) {
-            const targetRow = currentRow + deltaRow;
-            const targetCol = currentCol + deltaCol;
-
-            if (targetRow >= 0 && targetRow < gridSize && targetCol >= 0 && targetCol < gridSize) {
-                if (!walls.has(`${targetRow},${targetCol}`)) {
-                    currentRow = targetRow;
-                    currentCol = targetCol;
-                    updatePointPosition();
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        upBtn.addEventListener('click', () => { movePoint(-1, 0); });
-        downBtn.addEventListener('click', () => { movePoint(1, 0); });
-        leftBtn.addEventListener('click', () => { movePoint(0, -1); });
-        rightBtn.addEventListener('click', () => { movePoint(0, 1); });
-
-        document.addEventListener('keydown', (event) => {
-            let moved = false;
-            switch (event.key) {
-                case 'ArrowUp':
-                    moved = movePoint(-1, 0);
-                    break;
-                case 'ArrowDown':
-                    moved = movePoint(1, 0);
-                    break;
-                case 'ArrowLeft':
-                    moved = movePoint(0, -1);
-                    break;
-                case 'ArrowRight':
-                    moved = movePoint(0, 1);
-                    break;
-            }
-            if (moved) {
-                event.preventDefault();
-            }
-        });
-
-        // Logique pour le changement de couleur de fond
-        changeBgButton.addEventListener('click', () => {
-            currentBgColorIndex = (currentBgColorIndex + 1) % backgroundColors.length;
-            document.documentElement.style.setProperty('--body-bg', backgroundColors[currentBgColorIndex]);
-        });
-
-        updatePointPosition();
-    </script>
-
-    <script>
-    if('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(reg => console.log('SW OK')).catch(err => console.log('SW Error', err));
-      });
+    // Conversions UTF-8 <-> base64 fiables
+    function base64ToUtf8(base64) {
+        const raw = atob(base64.replace(/\s/g, ''));
+        return decodeURIComponent(escape(raw));
     }
-    </script>
 
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+    function utf8ToBase64(utf8Str) {
+        return btoa(unescape(encodeURIComponent(utf8Str)));
+    }
+
+    function playHum60Hz() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 60;
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        } catch(e) { console.warn(e); }
+    }
+
+    function showNotification(msg, type='success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `internal-toast ${type}-toast`;
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px) scale(0.95)';
+            setTimeout(() => toast.remove(), 250);
+        }, 3500);
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('hubcode_token');
+        if (saved) document.getElementById('githubToken').value = saved;
+    };
+
+    function setActivityState(active, msg="") {
+        const dot = document.getElementById('globalStatus');
+        const text = document.getElementById('statusText');
+        if(active) {
+            dot.className = "status-dot dot-active";
+            text.innerText = msg || "TRAITEMENT...";
+            text.style.color = "var(--accent)";
+        } else {
+            dot.className = "status-dot dot-idle";
+            text.innerText = "PRÊT";
+            text.style.color = "#666";
+        }
+    }
+
+    async function fetchRepositories() {
+        const token = document.getElementById('githubToken').value.trim();
+        if(!token) { showNotification("Token requis", "danger"); return; }
+        localStorage.setItem('hubcode_token', token);
+        setActivityState(true, "CHARGEMENT REPOS");
+        try {
+            const resp = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if(!resp.ok) throw new Error(`Erreur ${resp.status}`);
+            allRepositories = await resp.json();
+            document.getElementById('repoSearch').value = "";
+            renderRepos(allRepositories);
+        } catch(err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    function filterRepositories() {
+        const q = document.getElementById('repoSearch').value.toLowerCase();
+        const filtered = allRepositories.filter(r => r.name.toLowerCase().includes(q));
+        renderRepos(filtered);
+    }
+
+    // TRACKER
+    function getTracker(repoName) {
+        let el = document.getElementById(`tracker-${repoName}`);
+        if (!el) {
+            const repoDiv = document.getElementById(`repo-${repoName}`);
+            if (repoDiv) {
+                const newTracker = document.createElement('div');
+                newTracker.id = `tracker-${repoName}`;
+                newTracker.className = 'tracker-terminal';
+                newTracker.innerHTML = `<div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>`;
+                repoDiv.appendChild(newTracker);
+                el = newTracker;
+            }
+        }
+        return el;
+    }
+
+    function showTracker(repoName) {
+        const t = getTracker(repoName);
+        if (t) t.style.display = "flex";
+    }
+
+    function clearTracker(repoName) {
+        const t = getTracker(repoName);
+        if (t) {
+            t.innerHTML = `<div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>`;
+            t.style.display = "flex";
+        }
+    }
+
+    function addTrackerLog(repoName, message, status = "step") {
+        const t = getTracker(repoName);
+        if (!t) return;
+        const line = document.createElement('div');
+        line.className = `log-line log-${status === 'error' ? 'error' : (status === 'success' ? 'success' : (status === 'warning' ? 'warning' : 'step'))}`;
+        const time = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        let symbol = "•";
+        if (status === 'success') symbol = "✓";
+        else if (status === 'error') symbol = "✗";
+        else if (status === 'step') symbol = "▶";
+        else if (status === 'loading') symbol = "⟳";
+        line.innerHTML = `<span style="color:#888;">[${time}]</span> ${symbol} ${message}`;
+        if (status === 'loading') {
+            const spinner = document.createElement('span');
+            spinner.className = "spinner-small";
+            line.appendChild(spinner);
+        }
+        t.appendChild(line);
+        t.scrollTop = t.scrollHeight;
+    }
+
+    function setBackButtonState(repoName, disabled) {
+        const btn = document.querySelector(`#repo-${repoName} .action-btn.btn-back`);
+        if (btn) btn.disabled = disabled;
+    }
+
+    // ========== ROLLBACK AVEC VÉRIFICATION DE CHANGEMENT EFFECTIF ==========
+    async function revertToPreviousCommit(owner, repo, defaultBranch) {
+        const token = localStorage.getItem('hubcode_token');
+        if (!token) { showNotification("Token manquant", "danger"); return; }
+
+        clearTracker(repo);
+        showTracker(repo);
+        setBackButtonState(repo, true);
+        setActivityState(true, `ROLLBACK ${repo}`);
+        addTrackerLog(repo, `Début du rollback pour ${owner}/${repo} (branche ${defaultBranch})`, "step");
+
+        try {
+            // 1. Récupérer les 2 derniers commits
+            addTrackerLog(repo, "Récupération des 2 derniers commits...", "loading");
+            const commitsResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=2`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!commitsResp.ok) throw new Error(`HTTP ${commitsResp.status}`);
+            const commits = await commitsResp.json();
+            if (commits.length < 2) throw new Error("Aucun commit antérieur (moins de 2 commits)");
+            const targetSha = commits[1].sha;
+            addTrackerLog(repo, `Commit cible (n-1) : ${targetSha.substring(0,7)}`, "success");
+
+            // 2. Extraire index.html du commit précédent (contenu brut)
+            addTrackerLog(repo, "Extraction de l'ancien index.html...", "loading");
+            const fileResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${targetSha}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!fileResp.ok) throw new Error("index.html introuvable dans l'ancien commit");
+            const fileData = await fileResp.json();
+            const oldBase64 = fileData.content;
+            const oldContent = base64ToUtf8(oldBase64);
+            addTrackerLog(repo, `Ancien contenu (début) : ${oldContent.substring(0, 100)}...`, "success");
+
+            // 3. Récupérer le contenu actuel (branche par défaut)
+            addTrackerLog(repo, "Récupération du contenu actuel...", "loading");
+            const currentFileResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${defaultBranch}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!currentFileResp.ok) throw new Error("Impossible de récupérer la version actuelle");
+            const currentFile = await currentFileResp.json();
+            const currentSha = currentFile.sha;
+            const currentContent = base64ToUtf8(currentFile.content);
+            
+            // 4. COMPARAISON : si les contenus sont identiques, pas besoin de rollback
+            if (currentContent === oldContent) {
+                addTrackerLog(repo, "⚠️ Le commit cible a le même contenu que la version actuelle. Aucun changement nécessaire.", "warning");
+                addTrackerLog(repo, "Rien n'a été modifié sur le dépôt.", "step");
+                showNotification("Le commit précédent est identique à la version actuelle. Rollback inutile.", "warning");
+                return;
+            }
+            addTrackerLog(repo, "Les contenus sont différents → rollback nécessaire.", "success");
+
+            // 5. Préparer le nouveau base64 (propre)
+            const cleanBase64 = utf8ToBase64(oldContent);
+            
+            // 6. Injection du commit de restauration
+            addTrackerLog(repo, "Injection du commit de restauration...", "loading");
+            const putResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: "↩️ Rollback: restauration de l'état précédent",
+                    content: cleanBase64,
+                    sha: currentSha,
+                    branch: defaultBranch
+                })
+            });
+            if (!putResp.ok) {
+                const errText = await putResp.text();
+                throw new Error(`Échec PUT (${putResp.status}) : ${errText.slice(0, 100)}`);
+            }
+            const putData = await putResp.json();
+            const newCommitSha = putData.commit.sha;
+            addTrackerLog(repo, `Commit injecté : ${newCommitSha.substring(0,7)}`, "success");
+
+            // 7. Vérification finale : relire le fichier et comparer avec l'ancien contenu
+            addTrackerLog(repo, "Vérification finale du contenu restauré...", "loading");
+            const verifyResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${defaultBranch}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!verifyResp.ok) throw new Error("Impossible de vérifier le fichier après rollback");
+            const verifyData = await verifyResp.json();
+            const newContent = base64ToUtf8(verifyData.content);
+            if (newContent !== oldContent) {
+                throw new Error("Le contenu restauré ne correspond pas à l'ancienne version !");
+            }
+            addTrackerLog(repo, "Vérification réussie : le fichier sur GitHub est bien l'ancienne version.", "success");
+
+            // 8. Forcer rebuild GitHub Pages
+            addTrackerLog(repo, "Demande de reconstruction forcée à GitHub Pages...", "loading");
+            try {
+                const rebuildResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pages/builds`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }
+                });
+                if (rebuildResp.ok) {
+                    addTrackerLog(repo, "Rebuild déclenché avec succès (POST /pages/builds)", "success");
+                } else if (rebuildResp.status === 404) {
+                    addTrackerLog(repo, "GitHub Pages non activé → code restauré mais non publié", "warning");
+                } else {
+                    addTrackerLog(repo, `Impossible de forcer le rebuild (statut ${rebuildResp.status})`, "warning");
+                }
+            } catch(e) {
+                addTrackerLog(repo, "Le rebuild forcé n'est pas supporté", "warning");
+            }
+
+            // 9. Polling (optionnel, mais informatif)
+            addTrackerLog(repo, "Surveillance du build GitHub Pages (max 15x5s)...", "loading");
+            let deployed = false;
+            let attempts = 0;
+            const maxAttempts = 15;
+            while (!deployed && attempts < maxAttempts) {
+                await new Promise(r => setTimeout(r, 5000));
+                attempts++;
+                addTrackerLog(repo, `Polling build... (${attempts}/${maxAttempts})`, "loading");
+                const pagesCheck = await fetch(`https://api.github.com/repos/${owner}/${repo}/pages`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (pagesCheck.ok) {
+                    const pagesData = await pagesCheck.json();
+                    if (pagesData.status === "built") {
+                        deployed = true;
+                        addTrackerLog(repo, "✅ GitHub Pages a terminé la construction !", "success");
+                    } else if (pagesData.status === "building") {
+                        addTrackerLog(repo, "Build en cours...", "loading");
+                    }
+                } else if (pagesCheck.status === 404) {
+                    addTrackerLog(repo, "GitHub Pages non activé → pas de déploiement.", "warning");
+                    deployed = true;
+                }
+            }
+
+            const liveUrl = `https://${owner.toLowerCase()}.github.io/${repo}/`;
+            const cacheBusterUrl = liveUrl + (liveUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+            if (deployed) {
+                addTrackerLog(repo, `🎉 Rollback effectif ! L'état précédent est maintenant en ligne.`, "success");
+                addTrackerLog(repo, `🔗 Vérifie avec cache-buster : ${cacheBusterUrl}`, "step");
+                addTrackerLog(repo, "👉 Si le site n'a pas changé, fais Ctrl+Shift+R (forcer le rechargement) et attends 2 minutes.", "step");
+                showNotification(`Rollback réussi pour ${repo} (état antérieur restauré)`, "success");
+            } else {
+                addTrackerLog(repo, "⚠️ Le code a été restauré, mais le déploiement GitHub Pages n'a pas été détecté dans le délai.", "warning");
+                addTrackerLog(repo, "👉 Attends 2 minutes, puis ouvre : " + cacheBusterUrl, "step");
+                showNotification(`Rollback commité mais déploiement lent pour ${repo}`, "warning");
+            }
+        } catch (err) {
+            console.error(err);
+            addTrackerLog(repo, `ERREUR : ${err.message}`, "error");
+            showNotification(`Rollback échoué : ${err.message}`, "danger");
+        } finally {
+            setBackButtonState(repo, false);
+            setActivityState(false);
+        }
+    }
+
+    // ---------- AUTRES FONCTIONS ----------
+    function showConfirmPanel(repoName) {
+        document.getElementById(`confirm-${repoName}`).style.display = 'flex';
+    }
+    function hideConfirmPanel(repoName) {
+        document.getElementById(`confirm-${repoName}`).style.display = 'none';
+    }
+
+    async function deleteRepository(owner, repoName) {
+        const token = localStorage.getItem('hubcode_token');
+        hideConfirmPanel(repoName);
+        setActivityState(true, "SUPPRESSION");
+        try {
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (resp.status === 204 || resp.status === 240) {
+                allRepositories = allRepositories.filter(r => r.name !== repoName);
+                const el = document.getElementById(`repo-${repoName}`);
+                if (el) el.remove();
+                showNotification(`Dépôt ${repoName} supprimé.`, "success");
+            } else {
+                throw new Error(`Statut ${resp.status} - droits insuffisants`);
+            }
+        } catch (err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    async function copyGitFile(owner, repo, filename) {
+        const token = localStorage.getItem('hubcode_token');
+        setActivityState(true, `COPIE ${filename}`);
+        try {
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filename}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!resp.ok) throw new Error(`${filename} introuvable`);
+            const data = await resp.json();
+            const content = base64ToUtf8(data.content);
+            await navigator.clipboard.writeText(content);
+            showNotification(`${filename.toUpperCase()} copié`, "success");
+        } catch(err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    function viewLivePage(owner, repo) {
+        const url = `https://${owner.toLowerCase()}.github.io/${repo}/?t=${Date.now()}`;
+        window.open(url, '_blank');
+    }
+
+    function renderRepos(repos) {
+        const container = document.getElementById('repoListContainer');
+        container.innerHTML = "";
+        if (repos.length === 0) {
+            container.innerHTML = "<div style='text-align:center; color:#555; padding:20px;'>Aucun dépôt trouvé.</div>";
+            return;
+        }
+        repos.forEach(repo => {
+            const div = document.createElement('div');
+            div.className = 'repo-item';
+            div.id = `repo-${repo.name}`;
+            div.innerHTML = `
+                <div class="repo-header"><span>${repo.name}</span></div>
+                <div class="repo-actions-row">
+                    <button class="action-btn btn-html" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'index.html')">HTML</button>
+                    <button class="action-btn btn-json" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'manifest.json')">JSON</button>
+                    <button class="action-btn btn-sw" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'sw.js')">SW</button>
+                    <button class="action-btn btn-view" onclick="playHum60Hz(); viewLivePage('${repo.owner.login}', '${repo.name}')">VIEW</button>
+                    <button class="action-btn btn-back" onclick="playHum60Hz(); revertToPreviousCommit('${repo.owner.login}', '${repo.name}', '${repo.default_branch}')">BACK</button>
+                    <button class="action-btn btn-sup" onclick="playHum60Hz(); showConfirmPanel('${repo.name}')">SUP</button>
+                </div>
+                <div class="confirm-panel" id="confirm-${repo.name}">
+                    <span style="color:var(--danger);">Supprimer définitivement ${repo.name} ?</span>
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn" style="background:#f85149; color:white;" onclick="playHum60Hz(); deleteRepository('${repo.owner.login}', '${repo.name}')">CONFIRMER</button>
+                        <button class="confirm-btn" style="background:#444; color:white;" onclick="playHum60Hz(); hideConfirmPanel('${repo.name}')">ANNULER</button>
+                    </div>
+                </div>
+                <div class="tracker-terminal" id="tracker-${repo.name}">
+                    <div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(e => console.log("SW not available")));
+    }
+</script>
 
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
 </body>
