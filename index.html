@@ -1,6 +1,3 @@
-Yes
-Hoo
-Hii 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -17,7 +14,7 @@ Hii
             --button-active-bg: #2980b9;
             --border-color: #a0a0a0;
             --text-color: #333;
-            --body-bg: #f0f2f5; /* Couleur de fond par défaut */
+            --body-bg: #ff0000; /* Fond modifié en rouge par défaut */
             --heading-color: #4b6cb7;
             --coordinates-bg: #ecf0f1;
             --coordinates-text: #2c3e50;
@@ -269,7 +266,10 @@ Hii
             }
         }
     </style>
-</head>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4b6cb7">
+<link rel="apple-touch-icon" href="icon.png"></head>
 <body>
     <h1>badboy</h1>
     <p id="coordinates">Position: (X, Y)</p>
@@ -291,7 +291,6 @@ Hii
         <div class="toolbar-item wall-tool" draggable="true" id="wallToolbarItem">
             🧱
         </div>
-        <!-- Nouveau bouton pour changer la couleur de fond -->
         <div class="toolbar-item" id="changeBgButton">
             🎨
         </div>
@@ -316,8 +315,9 @@ Hii
         let draggingWallEl = null;
         let draggingWallCoords = null;
 
-        // Liste de couleurs de fond à alterner
+        // Liste de couleurs de fond à alterner (Commence par le rouge par défaut)
         const backgroundColors = [
+            '#ff0000', // Rouge par défaut
             '#f0f2f5', // Default light grey
             '#e0f7fa', // Light blue
             '#fffde7', // Light yellow
@@ -499,5 +499,7 @@ Hii
       });
     }
     </script>
+
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
 </body>
 </html>
