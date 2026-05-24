@@ -2,325 +2,748 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myapp - PWA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hubcode - Repository Manager</title>
     <style>
-        :root {
-            --bg-dark: #121212; --panel-bg: #1e1e1e; --text-light: #ffffff;
-            --accent-yellow: #FFD700; --btn-gray: #333; --danger-red: #cc0000;
-            --max-width: 480px;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { 
+            --bg: #1e1e22; 
+            --card-bg: #1e1e22; 
+            --shadow-dark: #111113; 
+            --shadow-light: #2b2b31; 
+            --accent: #ffca28; 
+            --text: #c9d1d9; 
+            --danger: #f85149; 
+            --success: #7ee787; 
+            --blue: #58a6ff;
+            --orange: #ffa726;
         }
-        body { background-color: var(--bg-dark); color: var(--text-light); font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
-        #app { width: 100%; max-width: var(--max-width); min-height: 100vh; padding-bottom: 70px; position: relative; }
         
-        #notif-bar { position: fixed; top: 0; left: 0; width: 100%; height: 50px; background: var(--accent-yellow); color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; transform: translateY(-100%); transition: transform 0.3s ease; z-index: 2000; }
-        #notif-bar.show { transform: translateY(0); }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, system-ui, sans-serif; 
+            padding: 15px; 
+            margin: 0;
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+        
+        .card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); 
+            border: none; 
+            margin-bottom: 20px; 
+        }
+        
+        h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-top: 0; }
+        
+        input { 
+            width: 100%; 
+            margin: 8px 0; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: none; 
+            background: var(--bg); 
+            color: white; 
+            box-sizing: border-box; 
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light); 
+            outline: none;
+            font-size: 13px;
+        }
 
-        .header-bar { height: 60px; display: flex; justify-content: flex-end; align-items: center; padding: 0 15px; }
-        .view { padding: 15px; display: none; } .view.active { display: block; }
+        .search-box {
+            margin: 12px 0 4px 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: 20px; 
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 9999;
+            pointer-events: none; 
+        }
+
+        @media (min-width: 440px) {
+            .toast-container {
+                left: auto;
+                width: 360px;
+            }
+        }
+
+        .internal-toast {
+            pointer-events: auto; 
+            background: linear-gradient(135deg, #16161a, #111113);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 0.5px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 2px 2px 4px var(--shadow-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .internal-toast.success-toast { border-left-color: var(--success); }
+        .internal-toast.danger-toast { border-left-color: var(--danger); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .card { background: var(--panel-bg); border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; }
-        .card img { width: 100%; height: 120px; object-fit: contain; border-radius: 8px; }
+        button.btn { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 8px; 
+            transition: all 0.1s ease; 
+            background: linear-gradient(135deg, #2b2b31, #1b1b1f); 
+            box-shadow: 4px 4px 8px var(--shadow-dark), 
+                        -4px -4px 8px var(--shadow-light),
+                        inset 1px 1px 1px rgba(255, 255, 255, 0.1); 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
         
-        .bottom-bar { position: fixed; bottom: 0; width: 100%; max-width: var(--max-width); height: 60px; background: #222; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; box-sizing: border-box; border-top: 1px solid #444; z-index: 900; }
+        button.btn:active { 
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), 
+                        inset -3px -3px 6px var(--shadow-light); 
+            transform: translateY(1px); 
+        }
         
-        .btn-nav { background: var(--accent-yellow); color: #000; border: none; padding: 10px 20px; font-weight: bold; border-radius: 8px; }
-        .btn-action { width: 100%; padding: 15px; margin-top: 10px; background: var(--accent-yellow); border: none; font-weight: bold; border-radius: 8px; }
-        .btn-cancel { width: 100%; padding: 15px; margin-top: 10px; background: #555; color: white; border: none; border-radius: 8px; }
+        .yellow-btn { color: var(--accent); border-bottom: 2px solid rgba(255, 202, 40, 0.2) !important; }
+        .red-btn { color: var(--danger); border-bottom: 2px solid rgba(248, 81, 73, 0.2) !important; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--panel-bg); padding: 20px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; }
-        .form-control { width: 100%; padding: 12px; margin: 8px 0; background: #333; border: none; color: white; border-radius: 8px; box-sizing: border-box; }
+        .repo-list {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
         
-        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-        .btn-key { padding: 20px 0; background: var(--btn-gray); border: none; color: white; font-size: 1.5rem; border-radius: 8px; }
-        .btn-ok { background: #4caf50; grid-column: span 3; }
+        .repo-item {
+            background: var(--card-bg);
+            padding: 14px;
+            border-radius: 14px;
+            box-shadow: 4px 4px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
         
-        .manage-item { background: var(--panel-bg); margin-bottom: 10px; border-radius: 8px; }
-        .manage-header { padding: 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #444; cursor: pointer; }
-        .prod-list { padding: 10px; background: #252525; display: none; }
-        .prod-item { padding: 8px; border-bottom: 1px solid #333; cursor: pointer; }
+        .repo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+        
+        .repo-actions-row {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            padding-bottom: 4px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            min-width: 0; 
+            padding: 11px 2px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            background: linear-gradient(135deg, #26262b, #16161a);
+            color: var(--text);
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 2px 2px 4px var(--shadow-dark), 
+                        -1px -1px 2px var(--shadow-light),
+                        inset 1px 1px 0px rgba(255, 255, 255, 0.05);
+            text-align: center;
+            transition: all 0.05s ease;
+        }
+        
+        .action-btn:active {
+            box-shadow: inset 2px 2px 4px var(--shadow-dark);
+            transform: translateY(1px);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+            filter: grayscale(0.1);
+        }
+
+        .btn-html { color: var(--blue); border-bottom: 2px solid rgba(88, 166, 255, 0.3); }
+        .btn-json { color: var(--accent); border-bottom: 2px solid rgba(255, 202, 40, 0.3); }
+        .btn-sw { color: var(--success); border-bottom: 2px solid rgba(126, 231, 135, 0.3); }
+        .btn-view { color: #fff; background: linear-gradient(135deg, #4a4a54, #2a2a30); border-bottom: 2px solid rgba(255, 255, 255, 0.2); }
+        .btn-back { color: var(--orange); border-bottom: 2px solid rgba(255, 167, 38, 0.3); }
+        .btn-sup { color: var(--danger); border-bottom: 2px solid rgba(248, 81, 73, 0.3); }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .dot-idle { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot-active { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 0.8s infinite alternate; }
+        
+        @keyframes blink { from { opacity: 0.4; } to { opacity: 1; } }
+        
+        .confirm-panel {
+            background: #1a1a1d;
+            border: 1px solid var(--danger);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 7px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 11px;
+            box-shadow: 2px 2px 4px var(--shadow-dark), inset 1px 1px 0px rgba(255, 255, 255, 0.1);
+            transition: all 0.05s ease;
+        }
+
+        .confirm-btn:active {
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transform: translateY(1px);
+        }
+
+        /* Tracker Terminal */
+        .tracker-terminal {
+            background: #0a0c10;
+            border-radius: 12px;
+            margin-top: 12px;
+            padding: 10px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 10px;
+            border: 1px solid rgba(255, 202, 40, 0.25);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+            color: #c0c0d0;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #2a2a32;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 9px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .log-line {
+            padding: 3px 4px;
+            border-radius: 5px;
+            background: #111217;
+            word-break: break-word;
+            font-size: 10px;
+            font-family: monospace;
+            border-left: 2px solid transparent;
+        }
+
+        .log-success { color: var(--success); border-left-color: var(--success); }
+        .log-error { color: var(--danger); border-left-color: var(--danger); }
+        .log-step { color: var(--blue); border-left-color: var(--blue); }
+        .log-warning { color: var(--orange); border-left-color: var(--orange); }
+
+        .spinner-small {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border: 1.5px solid rgba(255,202,40,0.3);
+            border-top: 1.5px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .signature {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-top: auto;
+            padding-top: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4b6cb7">
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4b6cb7">
-<link rel="apple-touch-icon" href="icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4b6cb7">
 <link rel="apple-touch-icon" href="icon.png"></head>
 <body>
+    <div id="toastContainer" class="toast-container"></div>
 
-    <div id="notif-bar">Notification</div>
-
-    <div id="app">
-        <div class="header-bar">
-            <button id="btn-pro" class="btn-nav" onclick="ui.openModal('pin')">Pro</button>
-            <button id="btn-logout" class="btn-nav" style="display:none; background:var(--danger-red); color:white;" onclick="ui.renderClient()">Déconnexion</button>
-        </div>
-
-        <div id="view-client" class="view active">
-            <h1>Menu</h1>
-            <div id="cat-grid" class="grid"></div>
-        </div>
-
-        <div id="view-products" class="view">
-            <button class="btn-nav" style="background:#444; color:white;" onclick="ui.renderClient()">← Retour</button>
-            <h2 id="cat-title"></h2>
-            <div id="prod-grid" class="grid"></div>
-        </div>
-
-        <div id="view-detail" class="view">
-            <button class="btn-nav" style="background:#444; color:white;" onclick="ui.renderClient()">← Retour</button>
-            <img id="detail-img" src="" style="width:100%; height:200px; object-fit:contain;">
-            <h2 id="detail-name"></h2>
-            <p id="detail-price"></p>
-            <button class="btn-action" onclick="ui.openQuantityKeypad()">Quantité: <span id="qty-val">1</span></button>
-            <button class="btn-action" onclick="app.addToCart()">Ajouter au panier</button>
-        </div>
-
-        <div id="view-cart" class="view">
-            <h1>Panier</h1>
-            <div id="cart-list"></div>
-        </div>
-
-        <div id="view-admin" class="view">
-            <h1>Admin</h1>
-            <button class="btn-action" onclick="ui.openModal('addCategory')">Ajouter catégorie</button>
-            <button class="btn-action" onclick="ui.openModal('selectCategoryForProduct')">Ajouter produit</button>
-            <button class="btn-action" onclick="ui.renderManage()">Gérer</button>
-        </div>
-
-        <div id="view-manage" class="view">
-            <button class="btn-nav" style="background:#444; color:white;" onclick="ui.showAdmin()">← Retour</button>
-            <h1>Gestion</h1>
-            <div id="manage-list"></div>
-        </div>
-
-        <div class="bottom-bar">
-            <button class="btn-nav" style="padding:5px 10px" onclick="ui.toggleCart()">Liste</button>
-            <div id="total-amount">0 DZD</div>
-            <button class="btn-nav" style="background:#4caf50; padding:5px 10px" onclick="ui.showNotification('Commande envoyée !')">Commander</button>
-        </div>
-
-        <div id="modal" class="modal-overlay"><div class="modal-content" id="modal-body"></div></div>
+    <div class="card">
+        <h2>Hubcode</h2>
+        <input type="password" id="githubToken" placeholder="Token GitHub (accès repo + delete_repo)">
+        <button class="btn yellow-btn" onclick="playHum60Hz(); fetchRepositories()">🔄 CHARGER LES DÉPÔTS</button>
     </div>
 
-    <script>
-        const app = {
-            categories: [], cart: [], pin: "0000", currentInput: "",
-            selectedProduct: null, tempQty: 1,
-            addToCart: () => {
-                app.cart.push({...app.selectedProduct, qty: app.tempQty});
-                ui.showNotification("Ajouté au panier");
-                ui.updateTotal();
-                ui.renderClient();
+    <div class="card" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between;">
+            <span style="font-size:0.75rem; text-transform:uppercase; color:#888;">Projets</span>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                <span class="status-dot dot-idle" id="globalStatus"></span> <span id="statusText">PRÊT</span>
+            </div>
+        </div>
+        <input type="text" id="repoSearch" class="search-box" placeholder="🔍 Rechercher..." oninput="filterRepositories()">
+        <div class="repo-list" id="repoListContainer"></div>
+    </div>
+    <div class="signature">Made by Brahim Laiche 2026 Paris</div>
+
+<script>
+    let allRepositories = [];
+    let audioCtx = null;
+
+    // Conversions UTF-8 <-> base64 fiables
+    function base64ToUtf8(base64) {
+        const raw = atob(base64.replace(/\s/g, ''));
+        return decodeURIComponent(escape(raw));
+    }
+
+    function utf8ToBase64(utf8Str) {
+        return btoa(unescape(encodeURIComponent(utf8Str)));
+    }
+
+    function playHum60Hz() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 60;
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        } catch(e) { console.warn(e); }
+    }
+
+    function showNotification(msg, type='success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `internal-toast ${type}-toast`;
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px) scale(0.95)';
+            setTimeout(() => toast.remove(), 250);
+        }, 3500);
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('hubcode_token');
+        if (saved) document.getElementById('githubToken').value = saved;
+    };
+
+    function setActivityState(active, msg="") {
+        const dot = document.getElementById('globalStatus');
+        const text = document.getElementById('statusText');
+        if(active) {
+            dot.className = "status-dot dot-active";
+            text.innerText = msg || "TRAITEMENT...";
+            text.style.color = "var(--accent)";
+        } else {
+            dot.className = "status-dot dot-idle";
+            text.innerText = "PRÊT";
+            text.style.color = "#666";
+        }
+    }
+
+    async function fetchRepositories() {
+        const token = document.getElementById('githubToken').value.trim();
+        if(!token) { showNotification("Token requis", "danger"); return; }
+        localStorage.setItem('hubcode_token', token);
+        setActivityState(true, "CHARGEMENT REPOS");
+        try {
+            const resp = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if(!resp.ok) throw new Error(`Erreur ${resp.status}`);
+            allRepositories = await resp.json();
+            document.getElementById('repoSearch').value = "";
+            renderRepos(allRepositories);
+        } catch(err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    function filterRepositories() {
+        const q = document.getElementById('repoSearch').value.toLowerCase();
+        const filtered = allRepositories.filter(r => r.name.toLowerCase().includes(q));
+        renderRepos(filtered);
+    }
+
+    // TRACKER
+    function getTracker(repoName) {
+        let el = document.getElementById(`tracker-${repoName}`);
+        if (!el) {
+            const repoDiv = document.getElementById(`repo-${repoName}`);
+            if (repoDiv) {
+                const newTracker = document.createElement('div');
+                newTracker.id = `tracker-${repoName}`;
+                newTracker.className = 'tracker-terminal';
+                newTracker.innerHTML = `<div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>`;
+                repoDiv.appendChild(newTracker);
+                el = newTracker;
             }
-        };
+        }
+        return el;
+    }
 
-        const db = {
-            init: () => { const d = localStorage.getItem('myapp_data'); if(d) app.categories = JSON.parse(d); },
-            save: () => localStorage.setItem('myapp_data', JSON.stringify(app.categories)),
-            saveCategory: (name, img) => { app.categories.push({name, img, products:[]}); db.save(); ui.renderClient(); },
-            saveProduct: (cIdx, name, qty, price, img) => { app.categories[cIdx].products.push({name, qty, price, img}); db.save(); }
-        };
+    function showTracker(repoName) {
+        const t = getTracker(repoName);
+        if (t) t.style.display = "flex";
+    }
 
-        const ui = {
-            showNotification: (msg) => {
-                const bar = document.getElementById('notif-bar');
-                bar.textContent = msg; bar.classList.add('show');
-                setTimeout(() => bar.classList.remove('show'), 2000);
-            },
-            updateTotal: () => {
-                const total = app.cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-                document.getElementById('total-amount').textContent = total + " DZD";
-            },
-            renderClient: () => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.getElementById('view-client').classList.add('active');
-                document.getElementById('btn-pro').style.display = 'block';
-                document.getElementById('btn-logout').style.display = 'none';
-                const grid = document.getElementById('cat-grid'); grid.innerHTML = '';
-                app.categories.forEach((cat, idx) => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `<img src="${cat.img}"><span>${cat.name}</span>`;
-                    div.onclick = () => ui.renderProducts(idx);
-                    grid.appendChild(div);
-                });
-            },
-            renderProducts: (idx) => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.getElementById('view-products').classList.add('active');
-                document.getElementById('cat-title').textContent = app.categories[idx].name;
-                const grid = document.getElementById('prod-grid'); grid.innerHTML = '';
-                app.categories[idx].products.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `<img src="${p.img}"><div>${p.name}<br>${p.price} DZD</div>`;
-                    div.onclick = () => ui.showDetail(p);
-                    grid.appendChild(div);
-                });
-            },
-            showDetail: (p) => {
-                app.selectedProduct = p; app.tempQty = 1;
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.getElementById('view-detail').classList.add('active');
-                document.getElementById('detail-img').src = p.img;
-                document.getElementById('detail-name').textContent = p.name;
-                document.getElementById('detail-price').textContent = p.price + " DZD";
-                document.getElementById('qty-val').textContent = 1;
-            },
-            toggleCart: () => {
-                const isViewActive = document.getElementById('view-cart').classList.contains('active');
-                if (isViewActive) ui.renderClient();
-                else {
-                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                    document.getElementById('view-cart').classList.add('active');
-                    const list = document.getElementById('cart-list');
-                    list.innerHTML = app.cart.length ? app.cart.map(i => `<div>${i.name} x${i.qty} - ${i.qty * i.price} DZD</div>`).join('') : 'Panier vide';
-                }
-            },
-            openModal: (type, data) => {
-                const modal = document.getElementById('modal'); modal.style.display = 'flex';
-                const body = document.getElementById('modal-body'); body.innerHTML = '';
-                
-                const addCancelBtn = () => {
-                    const b = document.createElement('button'); b.className = 'btn-cancel'; b.textContent = 'Annuler';
-                    b.onclick = () => ui.closeModal(); body.appendChild(b);
-                };
+    function clearTracker(repoName) {
+        const t = getTracker(repoName);
+        if (t) {
+            t.innerHTML = `<div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>`;
+            t.style.display = "flex";
+        }
+    }
 
-                if(type === 'pin') {
-                    app.currentInput = "";
-                    body.innerHTML = `<h3>Code PIN</h3><div id="pin-display" style="font-size:2rem; margin:10px;">____</div><div class="keypad-grid" id="keypad"></div>`;
-                    [1,2,3,4,5,6,7,8,9,0].forEach(n => {
-                        const b = document.createElement('button'); b.className = 'btn-key'; b.textContent = n;
-                        b.onclick = () => {
-                            app.currentInput += n;
-                            document.getElementById('pin-display').textContent = app.currentInput.padEnd(4, '_');
-                            if(app.currentInput.length === 4) {
-                                if(app.currentInput === app.pin) { ui.showAdmin(); ui.closeModal(); }
-                                else { app.currentInput = ""; document.getElementById('pin-display').textContent = "____"; }
-                            }
-                        };
-                        document.getElementById('keypad').appendChild(b);
-                    });
-                } else if(type === 'addCategory') {
-                    body.innerHTML = `<h3>Catégorie</h3><input type="text" id="c-name" class="form-control" placeholder="Nom"><input type="file" id="c-img" class="form-control" accept="image/*">`;
-                    const btn = document.createElement('button'); btn.className = 'btn-action'; btn.textContent = 'Créer';
-                    btn.onclick = () => {
-                        const name = document.getElementById('c-name').value;
-                        const file = document.getElementById('c-img').files[0];
-                        if(name && file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => { db.saveCategory(name, e.target.result); ui.closeModal(); };
-                            reader.readAsDataURL(file);
-                        }
-                    };
-                    body.appendChild(btn); addCancelBtn();
-                } else if(type === 'editCategory') {
-                    const cat = app.categories[data];
-                    body.innerHTML = `<h3>Modifier ${cat.name}</h3><input type="text" id="c-name" class="form-control" value="${cat.name}"><input type="file" id="c-img" class="form-control" accept="image/*">`;
-                    const btn = document.createElement('button'); btn.className = 'btn-action'; btn.textContent = 'Enregistrer';
-                    btn.onclick = () => {
-                        const name = document.getElementById('c-name').value;
-                        const file = document.getElementById('c-img').files[0];
-                        cat.name = name;
-                        if(file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => { cat.img = e.target.result; db.save(); ui.renderManage(); ui.closeModal(); };
-                            reader.readAsDataURL(file);
-                        } else { db.save(); ui.renderManage(); ui.closeModal(); }
-                    };
-                    body.appendChild(btn); addCancelBtn();
-                } else if(type === 'editProduct') {
-                    const prod = app.categories[data.cIdx].products[data.pIdx];
-                    body.innerHTML = `<h3>Modifier ${prod.name}</h3><input type="text" id="p-name" class="form-control" value="${prod.name}"><input type="number" id="p-qty" class="form-control" value="${prod.qty}"><input type="number" id="p-price" class="form-control" value="${prod.price}"><input type="file" id="p-img" class="form-control" accept="image/*">`;
-                    const btn = document.createElement('button'); btn.className = 'btn-action'; btn.textContent = 'Enregistrer';
-                    btn.onclick = () => {
-                        prod.name = document.getElementById('p-name').value;
-                        prod.qty = document.getElementById('p-qty').value;
-                        prod.price = document.getElementById('p-price').value;
-                        const file = document.getElementById('p-img').files[0];
-                        if(file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => { prod.img = e.target.result; db.save(); ui.renderManage(); ui.closeModal(); };
-                            reader.readAsDataURL(file);
-                        } else { db.save(); ui.renderManage(); ui.closeModal(); }
-                    };
-                    body.appendChild(btn); addCancelBtn();
-                } else if(type === 'selectCategoryForProduct') {
-                    body.innerHTML = `<h3>Choisir catégorie</h3>`;
-                    app.categories.forEach((cat, idx) => {
-                        const b = document.createElement('button'); b.className = 'btn-action'; b.textContent = cat.name;
-                        b.onclick = () => ui.openModal('addProduct', idx);
-                        body.appendChild(b);
-                    });
-                    addCancelBtn();
-                } else if(type === 'addProduct') {
-                    body.innerHTML = `<h3>Produit</h3><input type="text" id="p-name" class="form-control" placeholder="Nom"><input type="number" id="p-qty" class="form-control" placeholder="Qté"><input type="number" id="p-price" class="form-control" placeholder="Prix"><input type="file" id="p-img" class="form-control" accept="image/*">`;
-                    const btn = document.createElement('button'); btn.className = 'btn-action'; btn.textContent = 'Ajouter';
-                    btn.onclick = () => {
-                        const name = document.getElementById('p-name').value;
-                        const qty = document.getElementById('p-qty').value;
-                        const price = document.getElementById('p-price').value;
-                        const file = document.getElementById('p-img').files[0];
-                        if(name && qty && price && file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => { db.saveProduct(data, name, qty, price, e.target.result); ui.closeModal(); };
-                            reader.readAsDataURL(file);
-                        }
-                    };
-                    body.appendChild(btn); addCancelBtn();
-                }
-            },
-            closeModal: () => document.getElementById('modal').style.display = 'none',
-            openQuantityKeypad: () => {
-                const modal = document.getElementById('modal'); modal.style.display = 'flex';
-                const body = document.getElementById('modal-body'); body.innerHTML = `<h3>Quantité</h3><div id="q-display" style="font-size:3rem; margin:10px;">0</div><div class="keypad-grid" id="keypad"></div>`;
-                app.tempQty = 0;
-                [1,2,3,4,5,6,7,8,9,0].forEach(n => {
-                    const b = document.createElement('button'); b.className = 'btn-key'; b.textContent = n;
-                    b.onclick = () => { app.tempQty = parseInt(app.tempQty.toString() + n.toString()); document.getElementById('q-display').textContent = app.tempQty; };
-                    document.getElementById('keypad').appendChild(b);
-                });
-                const ok = document.createElement('button'); ok.className = 'btn-key btn-ok'; ok.textContent = 'OK';
-                ok.onclick = () => { document.getElementById('qty-val').textContent = app.tempQty; ui.closeModal(); };
-                document.getElementById('keypad').appendChild(ok);
-            },
-            renderManage: () => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.getElementById('view-manage').classList.add('active');
-                const list = document.getElementById('manage-list'); list.innerHTML = '';
-                app.categories.forEach((cat, cIdx) => {
-                    const item = document.createElement('div'); item.className = 'manage-item';
-                    item.innerHTML = `<div class="manage-header"><span>${cat.name}</span><button onclick="document.getElementById('p-${cIdx}').style.display = (document.getElementById('p-${cIdx}').style.display==='block'?'none':'block')">↓</button></div>`;
-                    item.firstElementChild.onclick = () => ui.openModal('editCategory', cIdx);
-                    
-                    const prodList = document.createElement('div'); prodList.id = `p-${cIdx}`; prodList.className = 'prod-list';
-                    cat.products.forEach((p, pIdx) => {
-                        const pDiv = document.createElement('div'); pDiv.className = 'prod-item';
-                        pDiv.innerHTML = `${p.name} - ${p.price} DZD`;
-                        pDiv.onclick = (e) => { e.stopPropagation(); ui.openModal('editProduct', {cIdx, pIdx}); };
-                        prodList.appendChild(pDiv);
-                    });
-                    item.appendChild(prodList);
-                    list.appendChild(item);
-                });
-            },
-            showAdmin: () => { 
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
-                document.getElementById('view-admin').classList.add('active');
-                document.getElementById('btn-pro').style.display = 'none';
-                document.getElementById('btn-logout').style.display = 'block';
+    function addTrackerLog(repoName, message, status = "step") {
+        const t = getTracker(repoName);
+        if (!t) return;
+        const line = document.createElement('div');
+        line.className = `log-line log-${status === 'error' ? 'error' : (status === 'success' ? 'success' : (status === 'warning' ? 'warning' : 'step'))}`;
+        const time = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        let symbol = "•";
+        if (status === 'success') symbol = "✓";
+        else if (status === 'error') symbol = "✗";
+        else if (status === 'step') symbol = "▶";
+        else if (status === 'loading') symbol = "⟳";
+        line.innerHTML = `<span style="color:#888;">[${time}]</span> ${symbol} ${message}`;
+        if (status === 'loading') {
+            const spinner = document.createElement('span');
+            spinner.className = "spinner-small";
+            line.appendChild(spinner);
+        }
+        t.appendChild(line);
+        t.scrollTop = t.scrollHeight;
+    }
+
+    function setBackButtonState(repoName, disabled) {
+        const btn = document.querySelector(`#repo-${repoName} .action-btn.btn-back`);
+        if (btn) btn.disabled = disabled;
+    }
+
+    // ========== ROLLBACK AVEC VÉRIFICATION DE CHANGEMENT EFFECTIF ==========
+    async function revertToPreviousCommit(owner, repo, defaultBranch) {
+        const token = localStorage.getItem('hubcode_token');
+        if (!token) { showNotification("Token manquant", "danger"); return; }
+
+        clearTracker(repo);
+        showTracker(repo);
+        setBackButtonState(repo, true);
+        setActivityState(true, `ROLLBACK ${repo}`);
+        addTrackerLog(repo, `Début du rollback pour ${owner}/${repo} (branche ${defaultBranch})`, "step");
+
+        try {
+            // 1. Récupérer les 2 derniers commits
+            addTrackerLog(repo, "Récupération des 2 derniers commits...", "loading");
+            const commitsResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=2`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!commitsResp.ok) throw new Error(`HTTP ${commitsResp.status}`);
+            const commits = await commitsResp.json();
+            if (commits.length < 2) throw new Error("Aucun commit antérieur (moins de 2 commits)");
+            const targetSha = commits[1].sha;
+            addTrackerLog(repo, `Commit cible (n-1) : ${targetSha.substring(0,7)}`, "success");
+
+            // 2. Extraire index.html du commit précédent (contenu brut)
+            addTrackerLog(repo, "Extraction de l'ancien index.html...", "loading");
+            const fileResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${targetSha}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!fileResp.ok) throw new Error("index.html introuvable dans l'ancien commit");
+            const fileData = await fileResp.json();
+            const oldBase64 = fileData.content;
+            const oldContent = base64ToUtf8(oldBase64);
+            addTrackerLog(repo, `Ancien contenu (début) : ${oldContent.substring(0, 100)}...`, "success");
+
+            // 3. Récupérer le contenu actuel (branche par défaut)
+            addTrackerLog(repo, "Récupération du contenu actuel...", "loading");
+            const currentFileResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${defaultBranch}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!currentFileResp.ok) throw new Error("Impossible de récupérer la version actuelle");
+            const currentFile = await currentFileResp.json();
+            const currentSha = currentFile.sha;
+            const currentContent = base64ToUtf8(currentFile.content);
+            
+            // 4. COMPARAISON : si les contenus sont identiques, pas besoin de rollback
+            if (currentContent === oldContent) {
+                addTrackerLog(repo, "⚠️ Le commit cible a le même contenu que la version actuelle. Aucun changement nécessaire.", "warning");
+                addTrackerLog(repo, "Rien n'a été modifié sur le dépôt.", "step");
+                showNotification("Le commit précédent est identique à la version actuelle. Rollback inutile.", "warning");
+                return;
             }
-        };
+            addTrackerLog(repo, "Les contenus sont différents → rollback nécessaire.", "success");
 
-        db.init();
-        ui.renderClient();
-    </script>
+            // 5. Préparer le nouveau base64 (propre)
+            const cleanBase64 = utf8ToBase64(oldContent);
+            
+            // 6. Injection du commit de restauration
+            addTrackerLog(repo, "Injection du commit de restauration...", "loading");
+            const putResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: "↩️ Rollback: restauration de l'état précédent",
+                    content: cleanBase64,
+                    sha: currentSha,
+                    branch: defaultBranch
+                })
+            });
+            if (!putResp.ok) {
+                const errText = await putResp.text();
+                throw new Error(`Échec PUT (${putResp.status}) : ${errText.slice(0, 100)}`);
+            }
+            const putData = await putResp.json();
+            const newCommitSha = putData.commit.sha;
+            addTrackerLog(repo, `Commit injecté : ${newCommitSha.substring(0,7)}`, "success");
 
-<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
+            // 7. Vérification finale : relire le fichier et comparer avec l'ancien contenu
+            addTrackerLog(repo, "Vérification finale du contenu restauré...", "loading");
+            const verifyResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/index.html?ref=${defaultBranch}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!verifyResp.ok) throw new Error("Impossible de vérifier le fichier après rollback");
+            const verifyData = await verifyResp.json();
+            const newContent = base64ToUtf8(verifyData.content);
+            if (newContent !== oldContent) {
+                throw new Error("Le contenu restauré ne correspond pas à l'ancienne version !");
+            }
+            addTrackerLog(repo, "Vérification réussie : le fichier sur GitHub est bien l'ancienne version.", "success");
+
+            // 8. Forcer rebuild GitHub Pages
+            addTrackerLog(repo, "Demande de reconstruction forcée à GitHub Pages...", "loading");
+            try {
+                const rebuildResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pages/builds`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' }
+                });
+                if (rebuildResp.ok) {
+                    addTrackerLog(repo, "Rebuild déclenché avec succès (POST /pages/builds)", "success");
+                } else if (rebuildResp.status === 404) {
+                    addTrackerLog(repo, "GitHub Pages non activé → code restauré mais non publié", "warning");
+                } else {
+                    addTrackerLog(repo, `Impossible de forcer le rebuild (statut ${rebuildResp.status})`, "warning");
+                }
+            } catch(e) {
+                addTrackerLog(repo, "Le rebuild forcé n'est pas supporté", "warning");
+            }
+
+            // 9. Polling (optionnel, mais informatif)
+            addTrackerLog(repo, "Surveillance du build GitHub Pages (max 15x5s)...", "loading");
+            let deployed = false;
+            let attempts = 0;
+            const maxAttempts = 15;
+            while (!deployed && attempts < maxAttempts) {
+                await new Promise(r => setTimeout(r, 5000));
+                attempts++;
+                addTrackerLog(repo, `Polling build... (${attempts}/${maxAttempts})`, "loading");
+                const pagesCheck = await fetch(`https://api.github.com/repos/${owner}/${repo}/pages`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (pagesCheck.ok) {
+                    const pagesData = await pagesCheck.json();
+                    if (pagesData.status === "built") {
+                        deployed = true;
+                        addTrackerLog(repo, "✅ GitHub Pages a terminé la construction !", "success");
+                    } else if (pagesData.status === "building") {
+                        addTrackerLog(repo, "Build en cours...", "loading");
+                    }
+                } else if (pagesCheck.status === 404) {
+                    addTrackerLog(repo, "GitHub Pages non activé → pas de déploiement.", "warning");
+                    deployed = true;
+                }
+            }
+
+            const liveUrl = `https://${owner.toLowerCase()}.github.io/${repo}/`;
+            const cacheBusterUrl = liveUrl + (liveUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+            if (deployed) {
+                addTrackerLog(repo, `🎉 Rollback effectif ! L'état précédent est maintenant en ligne.`, "success");
+                addTrackerLog(repo, `🔗 Vérifie avec cache-buster : ${cacheBusterUrl}`, "step");
+                addTrackerLog(repo, "👉 Si le site n'a pas changé, fais Ctrl+Shift+R (forcer le rechargement) et attends 2 minutes.", "step");
+                showNotification(`Rollback réussi pour ${repo} (état antérieur restauré)`, "success");
+            } else {
+                addTrackerLog(repo, "⚠️ Le code a été restauré, mais le déploiement GitHub Pages n'a pas été détecté dans le délai.", "warning");
+                addTrackerLog(repo, "👉 Attends 2 minutes, puis ouvre : " + cacheBusterUrl, "step");
+                showNotification(`Rollback commité mais déploiement lent pour ${repo}`, "warning");
+            }
+        } catch (err) {
+            console.error(err);
+            addTrackerLog(repo, `ERREUR : ${err.message}`, "error");
+            showNotification(`Rollback échoué : ${err.message}`, "danger");
+        } finally {
+            setBackButtonState(repo, false);
+            setActivityState(false);
+        }
+    }
+
+    // ---------- AUTRES FONCTIONS ----------
+    function showConfirmPanel(repoName) {
+        document.getElementById(`confirm-${repoName}`).style.display = 'flex';
+    }
+    function hideConfirmPanel(repoName) {
+        document.getElementById(`confirm-${repoName}`).style.display = 'none';
+    }
+
+    async function deleteRepository(owner, repoName) {
+        const token = localStorage.getItem('hubcode_token');
+        hideConfirmPanel(repoName);
+        setActivityState(true, "SUPPRESSION");
+        try {
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (resp.status === 204 || resp.status === 240) {
+                allRepositories = allRepositories.filter(r => r.name !== repoName);
+                const el = document.getElementById(`repo-${repoName}`);
+                if (el) el.remove();
+                showNotification(`Dépôt ${repoName} supprimé.`, "success");
+            } else {
+                throw new Error(`Statut ${resp.status} - droits insuffisants`);
+            }
+        } catch (err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    async function copyGitFile(owner, repo, filename) {
+        const token = localStorage.getItem('hubcode_token');
+        setActivityState(true, `COPIE ${filename}`);
+        try {
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filename}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!resp.ok) throw new Error(`${filename} introuvable`);
+            const data = await resp.json();
+            const content = base64ToUtf8(data.content);
+            await navigator.clipboard.writeText(content);
+            showNotification(`${filename.toUpperCase()} copié`, "success");
+        } catch(err) {
+            showNotification(err.message, "danger");
+        } finally {
+            setActivityState(false);
+        }
+    }
+
+    function viewLivePage(owner, repo) {
+        const url = `https://${owner.toLowerCase()}.github.io/${repo}/?t=${Date.now()}`;
+        window.open(url, '_blank');
+    }
+
+    function renderRepos(repos) {
+        const container = document.getElementById('repoListContainer');
+        container.innerHTML = "";
+        if (repos.length === 0) {
+            container.innerHTML = "<div style='text-align:center; color:#555; padding:20px;'>Aucun dépôt trouvé.</div>";
+            return;
+        }
+        repos.forEach(repo => {
+            const div = document.createElement('div');
+            div.className = 'repo-item';
+            div.id = `repo-${repo.name}`;
+            div.innerHTML = `
+                <div class="repo-header"><span>${repo.name}</span></div>
+                <div class="repo-actions-row">
+                    <button class="action-btn btn-html" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'index.html')">HTML</button>
+                    <button class="action-btn btn-json" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'manifest.json')">JSON</button>
+                    <button class="action-btn btn-sw" onclick="playHum60Hz(); copyGitFile('${repo.owner.login}', '${repo.name}', 'sw.js')">SW</button>
+                    <button class="action-btn btn-view" onclick="playHum60Hz(); viewLivePage('${repo.owner.login}', '${repo.name}')">VIEW</button>
+                    <button class="action-btn btn-back" onclick="playHum60Hz(); revertToPreviousCommit('${repo.owner.login}', '${repo.name}', '${repo.default_branch}')">BACK</button>
+                    <button class="action-btn btn-sup" onclick="playHum60Hz(); showConfirmPanel('${repo.name}')">SUP</button>
+                </div>
+                <div class="confirm-panel" id="confirm-${repo.name}">
+                    <span style="color:var(--danger);">Supprimer définitivement ${repo.name} ?</span>
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn" style="background:#f85149; color:white;" onclick="playHum60Hz(); deleteRepository('${repo.owner.login}', '${repo.name}')">CONFIRMER</button>
+                        <button class="confirm-btn" style="background:#444; color:white;" onclick="playHum60Hz(); hideConfirmPanel('${repo.name}')">ANNULER</button>
+                    </div>
+                </div>
+                <div class="tracker-terminal" id="tracker-${repo.name}">
+                    <div class="tracker-header"><span>⛁ ROLLBACK LOGS</span><span>⚡ temps réel</span></div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(e => console.log("SW not available")));
+    }
+</script>
 
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}</script>
 </body>
